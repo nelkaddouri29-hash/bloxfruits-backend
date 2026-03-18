@@ -13,6 +13,9 @@ const POLL_INTERVAL_MS = 2 * 60 * 1000; // every 2 minutes
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const FRUITYBLOX_APP_ID = "1086680940423434380"; // FruityBlox Stock Bot app ID
+console.log("TOKEN EXISTS:", !!process.env.DISCORD_TOKEN);
+console.log("TOKEN LENGTH:", process.env.DISCORD_TOKEN?.length);
+console.log("CHANNEL_ID:", process.env.CHANNEL_ID);
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));

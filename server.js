@@ -51,16 +51,23 @@ function parseStockEmbed(embeds) {
     ...(embed.fields || []).map(f => f.name + " " + f.value),
   ].join("\n");
 
-  console.log("RAW EMBED TEXT:", rawText.slice(0, 300));
+  // Remove Discord emoji tags like <:dark:123456789> and markdown
+  const cleanText = rawText
+    .replace(/<:[^:]+:\d+>/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "");
+
+  console.log("CLEAN TEXT:", cleanText.slice(0, 300));
 
   let currentSection = null;
-  for (const line of rawText.split("\n")) {
+  for (const line of cleanText.split("\n")) {
     const lower = line.toLowerCase();
     if (lower.includes("normal stock")) { currentSection = "normal"; continue; }
     if (lower.includes("mirage stock")) { currentSection = "mirage"; continue; }
+    if (lower.includes("outdated") || lower.includes("refreshes")) continue;
 
     if (currentSection) {
-      const match = line.match(/([A-Za-z\-]+)\s*[-–]\s*\$?\s*([\d,]+)/);
+      const match = line.match(/([A-Za-z\-]+)\s*[-–]\s*([\d,]+)/);
       if (match) {
         result[currentSection].push({
           name: match[1].trim(),
@@ -104,12 +111,7 @@ async function fetchStockFromDiscord() {
     let latestTimestamp = 0;
 
     for (const msg of msgs.values()) {
-      console.log(`MSG: ${msg.author.tag} | embeds: ${msg.embeds.length} | content: "${msg.content.slice(0, 50)}"`);
-
       if (msg.embeds.length > 0) {
-        console.log("EMBED TITLE:", msg.embeds[0].title);
-        console.log("EMBED DESC:", msg.embeds[0].description?.slice(0, 100));
-
         const parsed = parseStockEmbed(msg.embeds);
         if (parsed && msg.createdTimestamp > latestTimestamp) {
           latestStock = parsed;

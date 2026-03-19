@@ -50,7 +50,6 @@ function parseStockEmbed(embeds) {
     ...(embed.fields || []).map(f => f.name + " " + f.value),
   ].join("\n");
 
-  // Remove Discord emoji tags and markdown
   const cleanText = rawText
     .replace(/<:[^:]+:\d+>/g, "")
     .replace(/<a:[^:]+:\d+>/g, "")
@@ -67,9 +66,6 @@ function parseStockEmbed(embeds) {
     if (lower.includes("outdated") || lower.includes("refreshes") || lower.includes("stock changes") || lower.includes("add me")) continue;
 
     if (currentSection) {
-      // Supports both formats:
-      // "Dark - 500,000" (FruityBlox)
-      // "Flame • 250,000" (Bloxy Stocks)
       const match = line.match(/([A-Za-z\-]+)\s*[•\-–]\s*([\d,]+)/);
       if (match) {
         result[currentSection].push({
@@ -114,7 +110,10 @@ async function fetchStockFromDiscord() {
     let latestTimestamp = 0;
 
     for (const msg of msgs.values()) {
+      console.log(`MSG: ${msg.author.tag} | embeds: ${msg.embeds.length} | content: "${msg.content.slice(0, 50)}"`);
       if (msg.embeds.length > 0) {
+        console.log(`EMBED TITLE: ${msg.embeds[0].title}`);
+        console.log(`EMBED DESC: ${msg.embeds[0].description?.slice(0, 200)}`);
         const parsed = parseStockEmbed(msg.embeds);
         if (parsed && msg.createdTimestamp > latestTimestamp) {
           latestStock = parsed;

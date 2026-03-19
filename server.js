@@ -1,19 +1,14 @@
 const express = require("express");
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
-const { Client, GatewayIntentBits } = require("discord.js");
+const cheerio = require("cheerio");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const CACHE_FILE = path.join(__dirname, "stock_cache.json");
 const POLL_INTERVAL_MS = 2 * 60 * 1000;
-
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const CHANNEL_ID = process.env.CHANNEL_ID;
-
-console.log("TOKEN EXISTS:", !!DISCORD_TOKEN);
-console.log("CHANNEL_ID:", CHANNEL_ID);
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
@@ -39,108 +34,93 @@ function saveCache(data) {
 
 let stockState = { current: null, last: null, beforeLast: null, lastUpdated: null };
 
-function parseStockEmbed(embeds) {
-  const result = { normal: [], mirage: [] };
-  if (!embeds || embeds.length === 0) return null;
-
-  const embed = embeds[0];
-  const rawText = [
-    embed.title || "",
-    embed.description || "",
-    ...(embed.fields || []).map(f => f.name + " " + f.value),
-  ].join("\n");
-
-  const cleanText = rawText
-    .replace(/<:[^:]+:\d+>/g, "")
-    .replace(/<a:[^:]+:\d+>/g, "")
-    .replace(/\*\*/g, "")
-    .replace(/`/g, "");
-
-  console.log("CLEAN TEXT:", cleanText.slice(0, 400));
-
-  let currentSection = null;
-  for (const line of cleanText.split("\n")) {
-    const lower = line.toLowerCase();
-    if (lower.includes("normal stock")) { currentSection = "normal"; continue; }
-    if (lower.includes("mirage stock")) { currentSection = "mirage"; continue; }
-    if (lower.includes("outdated") || lower.includes("refreshes") || lower.includes("stock changes") || lower.includes("add me")) continue;
-
-    if (currentSection) {
-      const match = line.match(/([A-Za-z\-]+)\s*[•\-–]\s*([\d,]+)/);
-      if (match) {
-        result[currentSection].push({
-          name: match[1].trim(),
-          price: parseInt(match[2].replace(/,/g, "")),
-        });
-      }
-    }
-  }
-
-  if (result.normal.length === 0 && result.mirage.length === 0) return null;
-  return result;
-}
-
 function stockHasChanged(oldStock, newStock) {
   if (!oldStock) return true;
   if (!newStock) return false;
   return JSON.stringify(oldStock) !== JSON.stringify(newStock);
 }
 
-const discordClient = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
-
-async function fetchStockFromDiscord() {
-  console.log(`[${new Date().toISOString()}] Fetching stock from Discord...`);
+async function fetchAndUpdateStock() {
+  console.log(`[${new Date().toISOString()}] Scraping fruityblox.com...`);
   try {
-    const channel = await discordClient.channels.fetch(CHANNEL_ID);
-    if (!channel) {
-      console.error("Channel not found!");
-      return;
-    }
+    const response = await axios.get("https://fruityblox.com/stock", {
+      timeout: 15000,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      }
+    });
 
-    const msgs = await channel.messages.fetch({ limit: 20 });
-    console.log(`Found ${msgs.size} messages in channel`);
+    const $ = cheerio.load(response.data);
+    const result = { normal: [], mirage: [] };
 
-    let latestStock = null;
-    let latestTimestamp = 0;
+    console.log("Page loaded, parsing...");
 
-    for (const msg of msgs.values()) {
-      console.log(`MSG: ${msg.author.tag} | embeds: ${msg.embeds.length} | content: "${msg.content.slice(0, 50)}"`);
-      if (msg.embeds.length > 0) {
-        console.log(`EMBED TITLE: ${msg.embeds[0].title}`);
-        console.log(`EMBED DESC: ${msg.embeds[0].description?.slice(0, 200)}`);
-        const parsed = parseStockEmbed(msg.embeds);
-        if (parsed && msg.createdTimestamp > latestTimestamp) {
-          latestStock = parsed;
-          latestTimestamp = msg.createdTimestamp;
+    // FruityBlox renders stock in sections
+    // Try multiple selectors to find fruit data
+    $("*").each((i, el) => {
+      const text = $(el).text().trim();
+      // Look for fruit name patterns with prices
+    });
+
+    // Parse based on the page structure
+    const pageText = $("body").text();
+    console.log("Page text sample:", pageText.slice(0, 500));
+
+    // Look for Normal and Mirage sections
+    const normalMatch = pageText.match(/Normal[\s\S]*?(?=Mirage|$)/i);
+    const mirageMatch = pageText.match(/Mirage[\s\S]*/i);
+
+    const fruitPattern = /([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*\$\s*([\d,]+)/g;
+
+    if (normalMatch) {
+      let match;
+      const normalText = normalMatch[0];
+      while ((match = fruitPattern.exec(normalText)) !== null) {
+        const name = match[1].trim();
+        const price = parseInt(match[2].replace(/,/g, ""));
+        if (name !== "Normal" && name !== "Mirage" && name !== "Next" && price > 0) {
+          result.normal.push({ name, price });
         }
       }
     }
 
-    if (!latestStock) {
-      console.log("No stock embed found in last 20 messages.");
+    fruitPattern.lastIndex = 0;
+
+    if (mirageMatch) {
+      let match;
+      const mirageText = mirageMatch[0];
+      while ((match = fruitPattern.exec(mirageText)) !== null) {
+        const name = match[1].trim();
+        const price = parseInt(match[2].replace(/,/g, ""));
+        if (name !== "Normal" && name !== "Mirage" && name !== "Next" && price > 0) {
+          result.mirage.push({ name, price });
+        }
+      }
+    }
+
+    console.log("Parsed result:", JSON.stringify(result));
+
+    if (result.normal.length === 0 && result.mirage.length === 0) {
+      console.log("No fruits found — site may use JavaScript rendering");
       return;
     }
 
-    if (!stockHasChanged(stockState.current, latestStock)) {
+    if (!stockHasChanged(stockState.current, result)) {
       console.log("Stock unchanged — skipping.");
       return;
     }
 
-    console.log("New stock detected! Saving...", JSON.stringify(latestStock));
+    console.log("New stock detected! Saving...");
     stockState.beforeLast = stockState.last;
     stockState.last = stockState.current;
-    stockState.current = latestStock;
+    stockState.current = result;
     stockState.lastUpdated = new Date().toISOString();
     saveCache(stockState);
+    console.log("Saved:", JSON.stringify(result));
 
   } catch (err) {
-    console.error("Discord fetch failed:", err.message);
+    console.error("Scrape failed:", err.message);
   }
 }
 
@@ -168,16 +148,8 @@ app.get("/health", (req, res) => {
   });
 });
 
-discordClient.once("clientReady", async () => {
-  console.log(`Discord bot logged in as ${discordClient.user.tag}`);
-  await fetchStockFromDiscord();
-  setInterval(fetchStockFromDiscord, POLL_INTERVAL_MS);
-});
-
-discordClient.login(DISCORD_TOKEN).catch(err => {
-  console.error("Failed to login to Discord:", err.message);
-});
-
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  await fetchAndUpdateStock();
+  setInterval(fetchAndUpdateStock, POLL_INTERVAL_MS);
 });

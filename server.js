@@ -182,7 +182,7 @@ async function fetchAndUpdateStock() {
     console.log("Both sources failed. Fail count:", failCount);
     if (failCount === 3) {
       await sendNotification(
-        "⚠️ Stock ophalen mislukt",
+        "Stock ophalen mislukt",
         "De server kan geen stock data ophalen. Zowel de snelle API als de wiki zijn onbereikbaar.",
         "high",
         ["warning", "rotating_light"]
@@ -207,7 +207,7 @@ async function fetchAndUpdateStock() {
       f.name + " (" + (f.price / 1000000).toFixed(1) + "M Beli)"
     ).join(", ");
     await sendNotification(
-      "🍎 Zeldzame fruit in stock!",
+      "Zeldzame fruit in stock!",
       fruitList + " is nu in stock!",
       "urgent",
       ["rotating_light", "tada"]
@@ -250,7 +250,7 @@ app.get("/health", (req, res) => {
 app.listen(PORT, async () => {
   console.log("Server running on port", PORT);
   await sendNotification(
-    "✅ Server gestart",
+    "Server gestart",
     "Blox Fruits Stock server is opgestart en actief!",
     "low",
     ["white_check_mark"]

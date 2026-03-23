@@ -35,7 +35,7 @@ let failCount = 0;
 
 async function sendNotification(title, message, priority, tags) {
   try {
-    await axios.post(NTFY_URL, message, {
+    const result = await axios.post(NTFY_URL, message, {
       headers: {
         "Title": title,
         "Priority": priority || "default",
@@ -43,9 +43,12 @@ async function sendNotification(title, message, priority, tags) {
       },
       timeout: 10000,
     });
-    console.log("Notificatie verstuurd:", title);
+    console.log("Notificatie verstuurd:", title, "status:", result.status);
   } catch (err) {
     console.error("Notificatie mislukt:", err.message);
+    if (err.response) {
+      console.error("Response:", err.response.status, JSON.stringify(err.response.data));
+    }
   }
 }
 
@@ -247,6 +250,21 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.get("/test-notify", async (req, res) => {
+  try {
+    const result = await axios.post(NTFY_URL, "Test notificatie van Blox Fruits Stock server!", {
+      headers: {
+        "Title": "Test",
+        "Priority": "default",
+      },
+      timeout: 10000,
+    });
+    res.json({ success: true, status: result.status });
+  } catch (err) {
+    res.json({ success: false, error: err.message, response: err.response?.data });
+  }
+});
+
 app.listen(PORT, async () => {
   console.log("Server running on port", PORT);
   await sendNotification(
@@ -258,3 +276,8 @@ app.listen(PORT, async () => {
   await fetchAndUpdateStock();
   setInterval(fetchAndUpdateStock, POLL_INTERVAL_MS);
 });
+```
+
+**Commit → Manual Deploy → dan ga naar:**
+```
+https://bloxfruits-stock-api-xh8c.onrender.com/test-notify

@@ -246,8 +246,5 @@ app.listen(PORT, async () => {
   await fetchAndUpdateStock();
   setInterval(fetchAndUpdateStock, POLL_INTERVAL_MS);
 });
-```
 
-GitHub → `server.js` → potlood → **Ctrl+A** → verwijder → plak → **Commit → Manual Deploy** → dan ga naar:
-```
 https://bloxfruits-stock-api-xh8c.onrender.com/test-notify

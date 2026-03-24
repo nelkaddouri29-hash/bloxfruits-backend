@@ -59,47 +59,17 @@ function stockHasChanged(oldStock, newStock) {
 }
 
 const FRUIT_PRICES = {
-  "Rocket":    5000,
-  "Spin":      7500,
-  "Spring":    60000,
-  "Bomb":      80000,
-  "Smoke":     100000,
-  "Spike":     180000,
-  "Flame":     250000,
-  "Eagle":     300000,
-  "Ice":       350000,
-  "Sand":      420000,
-  "Dark":      500000,
-  "Ghost":     550000,
-  "Diamond":   600000,
-  "Light":     650000,
-  "Rubber":    750000,
-  "Creation":  800000,
-  "Magma":     850000,
-  "Quake":     1000000,
-  "Buddha":    1200000,
-  "Love":      1300000,
-  "Spider":    1500000,
-  "Sound":     1700000,
-  "Phoenix":   1800000,
-  "Portal":    1900000,
-  "Lightning": 2100000,
-  "Blizzard":  2400000,
-  "Gravity":   2500000,
-  "Mammoth":   2700000,
-  "T-Rex":     2700000,
-  "Dough":     2800000,
-  "Shadow":    2900000,
-  "Venom":     3000000,
-  "Gas":       3200000,
-  "Spirit":    3400000,
-  "Tiger":     5000000,
-  "Yeti":      5000000,
-  "Kitsune":   8000000,
-  "Control":   9000000,
-  "Dragon":    15000000,
-  "Pain":      2700000,
-  "Blade":     30000,
+  "Rocket": 5000, "Spin": 7500, "Spring": 60000, "Bomb": 80000,
+  "Smoke": 100000, "Spike": 180000, "Flame": 250000, "Eagle": 300000,
+  "Ice": 350000, "Sand": 420000, "Dark": 500000, "Ghost": 550000,
+  "Diamond": 600000, "Light": 650000, "Rubber": 750000, "Creation": 800000,
+  "Magma": 850000, "Quake": 1000000, "Buddha": 1200000, "Love": 1300000,
+  "Spider": 1500000, "Sound": 1700000, "Phoenix": 1800000, "Portal": 1900000,
+  "Lightning": 2100000, "Blizzard": 2400000, "Gravity": 2500000,
+  "Mammoth": 2700000, "T-Rex": 2700000, "Dough": 2800000, "Shadow": 2900000,
+  "Venom": 3000000, "Gas": 3200000, "Spirit": 3400000, "Tiger": 5000000,
+  "Yeti": 5000000, "Kitsune": 8000000, "Control": 9000000, "Dragon": 15000000,
+  "Pain": 2700000, "Blade": 30000,
 };
 
 async function fetchFromFastAPI() {
@@ -278,6 +248,6 @@ app.listen(PORT, async () => {
 });
 ```
 
-**Commit → Manual Deploy → dan ga naar:**
+GitHub → `server.js` → potlood → **Ctrl+A** → verwijder → plak → **Commit → Manual Deploy** → dan ga naar:
 ```
 https://bloxfruits-stock-api-xh8c.onrender.com/test-notify

@@ -154,12 +154,6 @@ async function fetchAndUpdateStock() {
     failCount++;
     console.log("Both sources failed. Fail count:", failCount);
     if (failCount === 3) {
-      await sendNotification(
-        "Stock ophalen mislukt",
-        "De server kan geen stock data ophalen. Zowel de snelle API als de wiki zijn onbereikbaar.",
-        "high",
-        ["warning", "rotating_light"]
-      );
     }
     return;
   }
